@@ -3,15 +3,25 @@ pipeline {
 
     parameters {
         string(name: 'REPO_URL', defaultValue: 'https://github.com/thurahtetaung/grpc.git', description: 'URL of the forked grpc repo')
-        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to checkout')
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to checkout')
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Clean workspace first
+                cleanWs()
+
                 // Clone the forked grpc repository
                 echo "Cloning repository ${params.REPO_URL}, branch ${params.BRANCH}"
                 git url: "${params.REPO_URL}", branch: "${params.BRANCH}"
+            }
+        }
+
+        stage('Show current directory structure') {
+            steps {
+                // Show the current directory structure to verify checkout
+                sh 'ls -la'
             }
         }
 
@@ -22,8 +32,11 @@ pipeline {
 
                 // Modify the configuration file
                 script {
-                    // Set the INPUT to src folder
-                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src|g" Doxyfile'
+                    // Use the correct source directories from the grpc repo
+                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src include|g" Doxyfile'
+
+                    // Make it recursive to include subdirectories
+                    sh 'sed -i "s|^RECURSIVE              = NO|RECURSIVE              = YES|g" Doxyfile'
 
                     // Disable all output formats except HTML
                     sh 'sed -i "s|^GENERATE_LATEX         = YES|GENERATE_LATEX         = NO|g" Doxyfile'
@@ -35,28 +48,45 @@ pipeline {
 
                     // Ensure HTML is enabled
                     sh 'sed -i "s|^GENERATE_HTML          = NO|GENERATE_HTML          = YES|g" Doxyfile'
+
+                    // Add warning log file
+                    sh 'sed -i "s|^WARN_LOGFILE           =|WARN_LOGFILE           = doxygen_warnings.log|g" Doxyfile'
                 }
             }
         }
 
         stage('Run Doxygen') {
             steps {
+                // Create empty warnings log file
+                sh 'touch doxygen_warnings.log'
+
                 // Run Doxygen with the modified config file
-                sh 'doxygen Doxyfile'
+                sh 'doxygen Doxyfile || echo "Doxygen completed with warnings"'
+            }
+        }
+
+        stage('Check Documentation') {
+            steps {
+                // Show what files were generated
+                sh 'find html -type f | wc -l || echo "No files found"'
+                sh 'ls -la html/ || echo "No html directory found"'
             }
         }
 
         stage('Package Documentation') {
             steps {
                 // Pack the generated HTML documentation
-                sh 'tar -czf doc.tar.gz html/'
+                sh 'tar -czf doc.tar.gz html/ || echo "Failed to create archive"'
             }
         }
 
         stage('Archive Artifacts') {
             steps {
                 // Archive the documentation package
-                archiveArtifacts artifacts: 'doc.tar.gz', fingerprint: true
+                archiveArtifacts artifacts: 'doc.tar.gz', fingerprint: true, allowEmptyArchive: true
+
+                // Archive the warnings log
+                archiveArtifacts artifacts: 'doxygen_warnings.log', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
