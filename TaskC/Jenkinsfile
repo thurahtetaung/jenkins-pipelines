@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'REPO_URL', defaultValue: 'https://github.com/thurahtetaung/grpc.git', description: 'URL of the forked grpc repo')
-        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to checkout')
+        string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to checkout')
         string(name: 'PARSER_REPO_URL', defaultValue: 'https://github.com/thurahtetaung/doxygen-log-parser.git', description: 'URL of the Python parser repo')
         string(name: 'PARSER_BRANCH', defaultValue: 'main', description: 'Branch to checkout for the parser repo')
     }
@@ -24,8 +24,11 @@ pipeline {
 
                 // Modify the configuration file
                 script {
-                    // Set the INPUT to src folder
-                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src|g" Doxyfile'
+                    // Use the correct source directories from the grpc repo
+                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src include|g" Doxyfile'
+
+                    // Make it recursive to include subdirectories
+                    sh 'sed -i "s|^RECURSIVE              = NO|RECURSIVE              = YES|g" Doxyfile'
 
                     // Disable all output formats except HTML
                     sh 'sed -i "s|^GENERATE_LATEX         = YES|GENERATE_LATEX         = NO|g" Doxyfile'
@@ -76,16 +79,33 @@ pipeline {
                     // Clone the parser repository
                     git url: "${params.PARSER_REPO_URL}", branch: "${params.PARSER_BRANCH}"
 
-                    // Install dependencies if any
-                    sh 'if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi'
+                    // Create and use a Python virtual environment for dependencies
+                    sh '''
+                        # Create a virtual environment
+                        python3 -m venv venv
+
+                        # Activate the virtual environment
+                        . venv/bin/activate
+
+                        # Install dependencies if any
+                        if [ -f "requirements.txt" ]; then
+                            pip install -r requirements.txt
+                        fi
+                    '''
                 }
             }
         }
 
         stage('Parse Warnings') {
             steps {
-                // Run the parser on the warnings file
-                sh 'python parser/doxygen_parser.py doxygen_warnings.log -o warnings.csv'
+                // Run the parser on the warnings file using the virtual environment
+                sh '''
+                    # Activate the virtual environment
+                    . parser/venv/bin/activate
+
+                    # Run the parser
+                    python parser/doxygen_parser.py doxygen_warnings.log -o warnings.csv
+                '''
 
                 // Archive the CSV output
                 archiveArtifacts artifacts: 'warnings.csv', fingerprint: true
