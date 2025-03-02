@@ -24,8 +24,11 @@ pipeline {
 
                 // Modify the configuration file
                 script {
-                    // Set the INPUT to src folder
-                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src|g" Doxyfile'
+                    // Use the correct source directories from the grpc repo
+                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src include|g" Doxyfile'
+
+                    // Make it recursive to include subdirectories
+                    sh 'sed -i "s|^RECURSIVE              = NO|RECURSIVE              = YES|g" Doxyfile'
 
                     // Disable all output formats except HTML
                     sh 'sed -i "s|^GENERATE_LATEX         = YES|GENERATE_LATEX         = NO|g" Doxyfile'
