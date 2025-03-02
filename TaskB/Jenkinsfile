@@ -39,6 +39,20 @@ pipeline {
             }
         }
 
+        stage('Show current directory structure') {
+            steps {
+                // Show the current directory structure
+                sh 'ls -R'
+            }
+        }
+
+        // stage('Show Doxy File in Jenkins Console') {
+        //     steps {
+        //         // Show the Doxyfile in the Jenkins console
+        //         sh 'cat Doxyfile'
+        //     }
+        // }
+
         stage('Run Doxygen') {
             steps {
                 // Run Doxygen with the modified config file
@@ -46,12 +60,6 @@ pipeline {
             }
         }
 
-        stage('Show Doxy File in Jenkins Console') {
-            steps {
-                // Show the Doxyfile in the Jenkins console
-                sh 'cat Doxyfile'
-            }
-        }
 
         stage('Package Documentation') {
             steps {
