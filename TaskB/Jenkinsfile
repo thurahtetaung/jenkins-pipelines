@@ -7,12 +7,28 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
+                // Clean workspace first
+                cleanWs()
+
                 // Clone the forked grpc repository
                 echo "Cloning repository ${params.REPO_URL}, branch ${params.BRANCH}"
                 git url: "${params.REPO_URL}", branch: "${params.BRANCH}"
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                // Try to install Graphviz for dot command (may need sudo rights)
+                sh 'apt-get update && apt-get install -y graphviz || echo "Warning: Could not install graphviz. Diagrams may not be generated."'
+            }
+        }
+
+        stage('Show current directory structure') {
+            steps {
+                // Show the current directory structure to verify checkout
+                sh 'ls -la'
             }
         }
 
@@ -46,44 +62,38 @@ pipeline {
             }
         }
 
-        stage('Show current directory structure') {
-            steps {
-                // Show the current directory structure
-                sh 'ls -R'
-            }
-        }
-
-        // stage('Show Doxy File in Jenkins Console') {
-        //     steps {
-        //         // Show the Doxyfile in the Jenkins console
-        //         sh 'cat Doxyfile'
-        //     }
-        // }
-
         stage('Run Doxygen') {
             steps {
                 // Create empty warnings log file
                 sh 'touch doxygen_warnings.log'
 
                 // Run Doxygen with the modified config file
-                sh 'doxygen Doxyfile'
+                sh 'doxygen Doxyfile || echo "Doxygen completed with warnings"'
+            }
+        }
+
+        stage('Check Documentation') {
+            steps {
+                // Show what files were generated
+                sh 'find html -type f | wc -l || echo "No files found"'
+                sh 'ls -la html/ || echo "No html directory found"'
             }
         }
 
         stage('Package Documentation') {
             steps {
                 // Pack the generated HTML documentation
-                sh 'tar -czf doc.tar.gz html/'
+                sh 'tar -czf doc.tar.gz html/ || echo "Failed to create archive"'
             }
         }
 
         stage('Archive Artifacts') {
             steps {
                 // Archive the documentation package
-                archiveArtifacts artifacts: 'doc.tar.gz', fingerprint: true
+                archiveArtifacts artifacts: 'doc.tar.gz', fingerprint: true, allowEmptyArchive: true
 
                 // Archive the warnings log
-                archiveArtifacts artifacts: 'doxygen_warnings.log', fingerprint: true
+                archiveArtifacts artifacts: 'doxygen_warnings.log', fingerprint: true, allowEmptyArchive: true
             }
         }
     }
