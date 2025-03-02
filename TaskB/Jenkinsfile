@@ -46,6 +46,13 @@ pipeline {
             }
         }
 
+        stage('Show Doxy File in Jenkins Console') {
+            steps {
+                // Show the Doxyfile in the Jenkins console
+                sh 'cat Doxyfile'
+            }
+        }
+
         stage('Package Documentation') {
             steps {
                 // Pack the generated HTML documentation
