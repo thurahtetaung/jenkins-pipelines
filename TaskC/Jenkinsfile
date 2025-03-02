@@ -5,7 +5,7 @@ pipeline {
         string(name: 'REPO_URL', defaultValue: 'https://github.com/thurahtetaung/grpc.git', description: 'URL of the forked grpc repo')
         string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to checkout')
         string(name: 'PARSER_REPO_URL', defaultValue: 'https://github.com/thurahtetaung/doxygen-log-parser.git', description: 'URL of the Python parser repo')
-        string(name: 'PARSER_BRANCH', defaultValue: 'master', description: 'Branch to checkout for the parser repo')
+        string(name: 'PARSER_BRANCH', defaultValue: 'main', description: 'Branch to checkout for the parser repo')
     }
 
     stages {
