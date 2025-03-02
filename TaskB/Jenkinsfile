@@ -7,6 +7,13 @@ pipeline {
     }
 
     stages {
+        stage('Install Dependencies') {
+            steps {
+                // Install Graphviz for dot command
+                sh 'sudo apt-get update && sudo apt-get install -y graphviz'
+            }
+        }
+
         stage('Checkout') {
             steps {
                 // Clone the forked grpc repository
@@ -22,8 +29,11 @@ pipeline {
 
                 // Modify the configuration file
                 script {
-                    // Set the INPUT to src folder
-                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src|g" Doxyfile'
+                    // Use the correct source directories from the grpc repo
+                    sh 'sed -i "s|^INPUT                  =|INPUT                  = src include|g" Doxyfile'
+
+                    // Make it recursive to include subdirectories
+                    sh 'sed -i "s|^RECURSIVE              = NO|RECURSIVE              = YES|g" Doxyfile'
 
                     // Disable all output formats except HTML
                     sh 'sed -i "s|^GENERATE_LATEX         = YES|GENERATE_LATEX         = NO|g" Doxyfile'
@@ -35,6 +45,9 @@ pipeline {
 
                     // Ensure HTML is enabled
                     sh 'sed -i "s|^GENERATE_HTML          = NO|GENERATE_HTML          = YES|g" Doxyfile'
+
+                    // Add warning log file
+                    sh 'sed -i "s|^WARN_LOGFILE           =|WARN_LOGFILE           = doxygen_warnings.log|g" Doxyfile'
                 }
             }
         }
@@ -55,11 +68,13 @@ pipeline {
 
         stage('Run Doxygen') {
             steps {
+                // Create empty warnings log file
+                sh 'touch doxygen_warnings.log'
+
                 // Run Doxygen with the modified config file
                 sh 'doxygen Doxyfile'
             }
         }
-
 
         stage('Package Documentation') {
             steps {
@@ -72,6 +87,9 @@ pipeline {
             steps {
                 // Archive the documentation package
                 archiveArtifacts artifacts: 'doc.tar.gz', fingerprint: true
+
+                // Archive the warnings log
+                archiveArtifacts artifacts: 'doxygen_warnings.log', fingerprint: true
             }
         }
     }
