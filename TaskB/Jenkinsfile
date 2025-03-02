@@ -18,13 +18,6 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                // Try to install Graphviz for dot command (may need sudo rights)
-                sh 'apt-get update && apt-get install -y graphviz || echo "Warning: Could not install graphviz. Diagrams may not be generated."'
-            }
-        }
-
         stage('Show current directory structure') {
             steps {
                 // Show the current directory structure to verify checkout
