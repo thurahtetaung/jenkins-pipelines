@@ -76,16 +76,33 @@ pipeline {
                     // Clone the parser repository
                     git url: "${params.PARSER_REPO_URL}", branch: "${params.PARSER_BRANCH}"
 
-                    // Install dependencies if any
-                    sh 'if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi'
+                    // Create and use a Python virtual environment for dependencies
+                    sh '''
+                        # Create a virtual environment
+                        python3 -m venv venv
+
+                        # Activate the virtual environment
+                        . venv/bin/activate
+
+                        # Install dependencies if any
+                        if [ -f "requirements.txt" ]; then
+                            pip install -r requirements.txt
+                        fi
+                    '''
                 }
             }
         }
 
         stage('Parse Warnings') {
             steps {
-                // Run the parser on the warnings file
-                sh 'python parser/doxygen_parser.py doxygen_warnings.log -o warnings.csv'
+                // Run the parser on the warnings file using the virtual environment
+                sh '''
+                    # Activate the virtual environment
+                    . parser/venv/bin/activate
+
+                    # Run the parser
+                    python parser/doxygen_parser.py doxygen_warnings.log -o warnings.csv
+                '''
 
                 // Archive the CSV output
                 archiveArtifacts artifacts: 'warnings.csv', fingerprint: true
