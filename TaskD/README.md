@@ -9,11 +9,11 @@ The pipelines were tested using the following approach:
 2. **Local Jenkins development**: Used Jenkins' built-in pipeline development tools:
    - Pipeline Syntax generator to validate syntax
    - Jenkins Pipeline Linter to catch syntax errors before running
-   - Blue Ocean visualization to inspect pipeline execution
 
 3. **Staged deployment**:
    - Started with a minimal pipeline and gradually added more complex stages
    - Used echo statements to debug variable values
+   - Used cat statements to print the contents of files like doxyfile config
    - Added descriptive stage names for improved visibility and debugging
    - Checked logs at each stage to identify issues
 
@@ -82,6 +82,14 @@ For the RepoA documentation (doc.tar.gz), LFS would prevent repository bloat as 
 ### Git-based approach
 
 1. **Install Git LFS**:
+   - Setup apt repository by running the following command:
+   ```bash
+   curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+
+   sudo apt update
+   ```
+
+   - Install Git LFS by running the following command:
    ```bash
    sudo apt install git-lfs
    ```
@@ -132,11 +140,11 @@ For the RepoA documentation (doc.tar.gz), LFS would prevent repository bloat as 
    - Often found in repository settings under storage or large file management
 
 3. **Artifact repositories instead of Git LFS**:
-   - Use Jenkins to publish artifacts to dedicated artifact repositories:
+   - Use Jenkins or other CI/CD tools to publish artifacts to dedicated artifact repositories:
      - JFrog Artifactory
      - Nexus Repository
      - Amazon S3
    - This completely separates binary storage from the Git repository
-   - Can be integrated with Jenkins to upload/download artifacts during pipeline execution
+   - Can be integrated with Jenkins or other CI/CD tools to upload/download artifacts during pipeline execution
 
 The git-based approach is preferred for true version control of binary files, while artifact repositories offer simpler management with less Git integration.
