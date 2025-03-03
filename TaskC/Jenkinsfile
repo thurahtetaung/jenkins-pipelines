@@ -80,6 +80,7 @@ pipeline {
                     git url: "${params.PARSER_REPO_URL}", branch: "${params.PARSER_BRANCH}"
 
                     // Create and use a Python virtual environment for dependencies
+                    // There are no actual dependencies to install for this parser, I am just simulating the process as to show what should be done if there are any dependencies to install
                     sh '''
                         # Create a virtual environment
                         python3 -m venv venv
